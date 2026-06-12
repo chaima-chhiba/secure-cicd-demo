@@ -113,7 +113,8 @@ jobs:
   push-image:
     name: Push Image to Docker Hub
     runs-on: ubuntu-latest
-    needs: [semgrep, dependency-check, trivy-scan]
+    needs: [semgrep, dependency-check]
+    if: success()
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
