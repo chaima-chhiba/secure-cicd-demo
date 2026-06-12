@@ -56,33 +56,37 @@ jobs:
           name: dependency-check-report
           path: reports/
 
-  trivy-scan:
+ trivy-scan:
     name: Trivy Docker Image Scan
     runs-on: ubuntu-latest
     needs: gitleaks
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
       - name: Build Docker image
-        run: docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/secure-cicd-demo:${{ github.sha }} .
+        run: docker build -t secure-cicd-demo:${{ github.sha }} .
+
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: '${{ secrets.DOCKERHUB_USERNAME }}/secure-cicd-demo:${{ github.sha }}'
+          image-ref: 'secure-cicd-demo:${{ github.sha }}'
           format: 'table'
           exit-code: '1'
           ignore-unfixed: true
           severity: 'CRITICAL'
           scanners: 'vuln'
           vuln-type: 'os'
+
       - name: Run Trivy SARIF output
         uses: aquasecurity/trivy-action@master
         if: always()
         with:
-          image-ref: '${{ secrets.DOCKERHUB_USERNAME }}/secure-cicd-demo:${{ github.sha }}'
+          image-ref: 'secure-cicd-demo:${{ github.sha }}'
           format: 'sarif'
           output: 'trivy-results.sarif'
           severity: 'CRITICAL,HIGH'
+
       - name: Upload Trivy SARIF to GitHub Security
         uses: github/codeql-action/upload-sarif@v3
         if: always()
