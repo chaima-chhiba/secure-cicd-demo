@@ -26,7 +26,25 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   # ─────────────────────────────────────────
-  # JOB 2: OWASP Dependency-Check
+  # JOB 2: SAST — Semgrep
+  # ─────────────────────────────────────────
+  semgrep:
+    name: Semgrep SAST
+    runs-on: ubuntu-latest
+    needs: gitleaks
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Semgrep
+        uses: semgrep/semgrep-action@v1
+        with:
+          config: p/python
+          publishToken: ${{ secrets.SEMGREP_APP_TOKEN }}
+
+  # ─────────────────────────────────────────
+  # JOB 3: OWASP Dependency-Check
   # ─────────────────────────────────────────
   dependency-check:
     name: OWASP Dependency-Check
@@ -55,7 +73,7 @@ jobs:
           path: reports/
 
   # ─────────────────────────────────────────
-  # JOB 3: Trivy Docker Image Scan
+  # JOB 4: Trivy Image Scan + SBOM
   # ─────────────────────────────────────────
   trivy-scan:
     name: Trivy Docker Image Scan
@@ -92,3 +110,32 @@ jobs:
         if: always()
         with:
           sarif_file: 'trivy-results.sarif'
+
+  # ─────────────────────────────────────────
+  # JOB 5: SBOM Generation
+  # ─────────────────────────────────────────
+  sbom:
+    name: Generate SBOM
+    runs-on: ubuntu-latest
+    needs: trivy-scan
+    if: always()
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t secure-cicd-demo:${{ github.sha }} .
+
+      - name: Generate SBOM with Syft
+        uses: anchore/sbom-action@v0
+        with:
+          image: secure-cicd-demo:${{ github.sha }}
+          format: spdx-json
+          output-file: sbom.spdx.json
+
+      - name: Upload SBOM artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom-report
+          path: sbom.spdx.json
