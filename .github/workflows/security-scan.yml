@@ -1,0 +1,74 @@
+name: Secure CI/CD Pipeline
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # ─────────────────────────────────────────
+  # JOB 1: OWASP Dependency-Check
+  # ─────────────────────────────────────────
+  dependency-check:
+    name: OWASP Dependency-Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run OWASP Dependency-Check
+        uses: dependency-check/Dependency-Check_Action@main
+        with:
+          project: "secure-cicd-demo"
+          path: "."
+          format: "HTML"
+          args: >
+            --failOnCVSS 9
+            --enableRetired
+
+      - name: Upload Dependency-Check Report
+        uses: actions/upload-artifact@v4
+        if: always()   # upload even on failure so you can review it
+        with:
+          name: dependency-check-report
+          path: reports/
+
+  # ─────────────────────────────────────────
+  # JOB 2: Build + Trivy Image Scan
+  # ─────────────────────────────────────────
+  trivy-scan:
+    name: Trivy Docker Image Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t secure-cicd-demo:${{ github.sha }} .
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: "secure-cicd-demo:${{ github.sha }}"
+          format: "table"
+          exit-code: "1"           # ← FAILS the pipeline on critical findings
+          ignore-unfixed: true      # skip vulns with no patch yet
+          severity: "CRITICAL"      # only fail on CRITICAL (add HIGH if you want stricter)
+
+      - name: Run Trivy — SARIF output (for GitHub Security tab)
+        uses: aquasecurity/trivy-action@master
+        if: always()
+        with:
+          image-ref: "secure-cicd-demo:${{ github.sha }}"
+          format: "sarif"
+          output: "trivy-results.sarif"
+          severity: "CRITICAL,HIGH"
+
+      - name: Upload Trivy SARIF to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: "trivy-results.sarif"
