@@ -1,0 +1,5 @@
+﻿# pip MEDIUM CVEs - no fix available at build time, not CRITICAL
+CVE-2025-8869
+CVE-2026-3219
+CVE-2026-6357
+CVE-2026-1703

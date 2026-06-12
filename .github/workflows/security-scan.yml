@@ -73,6 +73,7 @@ jobs:
           exit-code: '1'
           ignore-unfixed: true
           severity: 'CRITICAL'
+          trivyignores: '.trivyignore'
       - name: Run Trivy SARIF output
         uses: aquasecurity/trivy-action@master
         if: always()
