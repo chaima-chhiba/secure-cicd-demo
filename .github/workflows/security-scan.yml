@@ -43,55 +43,50 @@ jobs:
       - name: Run OWASP Dependency-Check
         uses: dependency-check/Dependency-Check_Action@main
         with:
-          project: 'secure-cicd-demo'
-          path: '.'
-          format: 'HTML'
-          args: >
-            --failOnCVSS 9
-            --enableRetired
-      - name: Upload Dependency-Check Report
+          project: secure-cicd-demo
+          path: .
+          format: HTML
+          args: --failOnCVSS 9 --enableRetired
+      - name: Upload Report
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: dependency-check-report
           path: reports/
 
- trivy-scan:
+  trivy-scan:
     name: Trivy Docker Image Scan
     runs-on: ubuntu-latest
     needs: gitleaks
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
       - name: Build Docker image
         run: docker build -t secure-cicd-demo:${{ github.sha }} .
-
-      - name: Run Trivy vulnerability scanner
+      - name: Run Trivy scanner
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: 'secure-cicd-demo:${{ github.sha }}'
-          format: 'table'
-          exit-code: '1'
+          image-ref: secure-cicd-demo:${{ github.sha }}
+          format: table
+          exit-code: 1
           ignore-unfixed: true
-          severity: 'CRITICAL'
-          scanners: 'vuln'
-          vuln-type: 'os'
-
-      - name: Run Trivy SARIF output
+          severity: CRITICAL
+          scanners: vuln
+          vuln-type: os
+      - name: Trivy SARIF output
         uses: aquasecurity/trivy-action@master
         if: always()
         with:
-          image-ref: 'secure-cicd-demo:${{ github.sha }}'
-          format: 'sarif'
-          output: 'trivy-results.sarif'
-          severity: 'CRITICAL,HIGH'
-
-      - name: Upload Trivy SARIF to GitHub Security
+          image-ref: secure-cicd-demo:${{ github.sha }}
+          format: sarif
+          output: trivy-results.sarif
+          severity: CRITICAL,HIGH
+          scanners: vuln
+      - name: Upload SARIF
         uses: github/codeql-action/upload-sarif@v3
         if: always()
         with:
-          sarif_file: 'trivy-results.sarif'
+          sarif_file: trivy-results.sarif
 
   sbom:
     name: Generate SBOM
@@ -102,14 +97,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       - name: Build Docker image
-        run: docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/secure-cicd-demo:${{ github.sha }} .
-      - name: Generate SBOM with Syft
+        run: docker build -t secure-cicd-demo:${{ github.sha }} .
+      - name: Generate SBOM
         uses: anchore/sbom-action@v0
         with:
-          image: '${{ secrets.DOCKERHUB_USERNAME }}/secure-cicd-demo:${{ github.sha }}'
+          image: secure-cicd-demo:${{ github.sha }}
           format: spdx-json
           output-file: sbom.spdx.json
-      - name: Upload SBOM artifact
+      - name: Upload SBOM
         uses: actions/upload-artifact@v4
         with:
           name: sbom-report
@@ -127,7 +122,7 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Build and push image
+      - name: Build and push
         uses: docker/build-push-action@v5
         with:
           context: .
