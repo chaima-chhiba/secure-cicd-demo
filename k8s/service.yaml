@@ -2,12 +2,15 @@
 kind: Service
 metadata:
   name: secure-cicd-demo-service
+  labels:
+    app: secure-cicd-demo
 spec:
   selector:
     app: secure-cicd-demo
   type: NodePort
   ports:
-    - protocol: TCP
+    - name: http
+      protocol: TCP
       port: 80
       targetPort: 5000
       nodePort: 30080
