@@ -14,32 +14,32 @@ provider "kubernetes" {
 
 resource "kubernetes_deployment" "app" {
   metadata {
-    name = "secure-cicd-demo"
+    name = var.app_name
     labels = {
-      app = "secure-cicd-demo"
+      app = var.app_name
     }
   }
 
   spec {
-    replicas = 2
+    replicas = var.replicas
 
     selector {
       match_labels = {
-        app = "secure-cicd-demo"
+        app = var.app_name
       }
     }
 
     template {
       metadata {
         labels = {
-          app = "secure-cicd-demo"
+          app = var.app_name
         }
       }
 
       spec {
         container {
-          name  = "secure-cicd-demo"
-          image = "chaimachhiba/secure-cicd-demo:latest"
+          name  = var.app_name
+          image = var.image
 
           port {
             container_port = 5000
@@ -81,12 +81,12 @@ resource "kubernetes_deployment" "app" {
 
 resource "kubernetes_service" "app" {
   metadata {
-    name = "secure-cicd-demo-service"
+    name = "${var.app_name}-service"
   }
 
   spec {
     selector = {
-      app = "secure-cicd-demo"
+      app = var.app_name
     }
 
     type = "NodePort"

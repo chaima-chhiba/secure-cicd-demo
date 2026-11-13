@@ -101,6 +101,21 @@ terraform plan
 terraform apply
 ```
 
+### Isolated security lab
+
+The repository includes an intentionally vulnerable OWASP Juice Shop deployment for
+controlled DAST testing. It is isolated in its own namespace and exposed only as a
+cluster-internal `ClusterIP` service:
+
+```bash
+kubectl apply -f k8s/security-lab/namespace.yaml
+kubectl apply -f k8s/security-lab/juice-shop.yaml
+kubectl -n security-lab port-forward svc/juice-shop 3000:3000
+```
+
+Only run this lab in a local or dedicated test cluster. Do not expose it through a
+public ingress or deploy it alongside production workloads.
+
 ### Access the app
 
 ```bash
