@@ -45,6 +45,7 @@ Gitleaks (secrets)
 | **Semgrep** | Python source code vulnerabilities (SAST) | High severity issue found |
 | **OWASP Dependency-Check** | Known CVEs in Python packages via NIST NVD | CVSSv3 score >= 9.0 |
 | **Trivy** | Docker image OS-level vulnerabilities | CRITICAL CVE with a fix available |
+| **OWASP ZAP** | Dynamic web application vulnerabilities | ZAP baseline scan fails |
 | **Syft SBOM** | Generates software bill of materials | Never fails, always produces report |
 | **Docker Hub Push** | Pushes verified image to registry | Only runs if all scans pass |
 
@@ -191,7 +192,14 @@ Scans the built Docker image for OS-level CVEs. Configured to only fail on CRITI
 Generates a complete inventory of every component inside the Docker image using Syft in SPDX JSON format. Required by US Executive Order 14028 for software supply chain security.
 
 ### 6. Docker Hub Push
-Only executes if Gitleaks, Semgrep, OWASP, and Trivy all pass. Pushes two tags: `latest` and the commit SHA for full traceability.
+Only executes if Gitleaks, Semgrep, OWASP Dependency-Check, Trivy, and ZAP all pass. Pushes two tags: `latest` and the commit SHA for full traceability.
+
+### 7. OWASP ZAP — Dynamic Application Security Testing
+The DAST job starts an ephemeral Juice Shop container inside the GitHub Actions runner,
+waits for its health endpoint, and runs the ZAP baseline scanner against it. The target
+is destroyed after the scan and the HTML report is uploaded as a workflow artifact.
+This intentionally vulnerable target is isolated from the Kubernetes deployment and is
+never published or exposed by the pipeline.
 
 ## 🐳 Docker Security Hardening
 
